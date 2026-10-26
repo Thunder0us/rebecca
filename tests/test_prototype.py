@@ -1,6 +1,8 @@
 """Проверки Qt без Windows; нативное поведение проверяется вручную."""
 
 import unittest
+from pathlib import Path
+import tempfile
 
 from PySide6.QtCore import QPoint, QRect, Qt, QTimer
 from PySide6.QtGui import QContextMenuEvent
@@ -16,12 +18,14 @@ class PrototypeTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        self.window = CharacterWindow()
+        self.sprites = tempfile.TemporaryDirectory()
+        self.window = CharacterWindow(sprites_dir=Path(self.sprites.name))
 
     def tearDown(self):
         self.window.close()
         self.window.deleteLater()
         self.app.processEvents()
+        self.sprites.cleanup()
 
     def test_window_is_small_frameless_and_does_not_request_focus(self):
         self.assertEqual((self.window.width(), self.window.height()), (64, 96))

@@ -78,6 +78,26 @@ class DragTests(unittest.TestCase):
         self.move(QPoint(300, 300))
         self.assertEqual(self.window.pos(), QPoint(210, 210))
 
+    def test_pause_prevents_drag_and_resume_restores_it(self):
+        self.window.context_menu.pause_action.trigger()
+        self.press(QPoint(115, 120))
+        self.move(QPoint(215, 220))
+        self.release(QPoint(215, 220))
+        self.assertEqual(self.window.pos(), QPoint(100, 100))
+        self.assertEqual(self.window.context_menu.pause_action.text(), "Продолжить")
+        self.window.context_menu.pause_action.trigger()
+        self.press(QPoint(115, 120))
+        self.move(QPoint(215, 220))
+        self.release(QPoint(215, 220))
+        self.assertEqual(self.window.pos(), QPoint(200, 200))
+
+    def test_pause_during_drag_cancels_grab(self):
+        self.press(QPoint(115, 120))
+        self.window.toggle_pause()
+        self.window.toggle_pause()
+        self.move(QPoint(215, 220))
+        self.assertEqual(self.window.pos(), QPoint(100, 100))
+
     def test_drag_is_clamped_to_work_area(self):
         self.press(QPoint(115, 120))
         self.move(QPoint(100000, 100000))

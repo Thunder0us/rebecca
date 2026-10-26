@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "animations": {
+    "idle": {
+      "fps": 6,
+      "frames": [
+        "idle/00.png",
+        "idle/01.png",
+        "idle/02.png",
+        "idle/03.png",
+        "idle/04.png",
+        "idle/05.png",
+        "idle/06.png",
+        "idle/07.png",
+        "idle/08.png",
+        "idle/09.png",
+        "idle/10.png",
+        "idle/11.png"
+      ]
+    },
+    "walk": {
+      "fps": 8,
+      "frames": [
+        "walk/00.png",
+        "walk/01.png",
+        "walk/02.png",
+        "walk/03.png",
+        "walk/04.png",
+        "walk/05.png",
+        "walk/06.png",
+        "walk/07.png"
+      ]
+    }
+  }
+}

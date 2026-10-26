@@ -64,10 +64,11 @@ class PrototypeTests(unittest.TestCase):
             QApplication.sendEvent(self.window, event)
             menu = self.window.findChild(QMenu)
             self.assertTrue(menu.isVisible())
-            self.assertEqual([action.text() for action in menu.actions()], ["Выход"])
+            self.assertEqual([action.text() for action in menu.actions() if not action.isSeparator()],
+                             ["Пауза", "Скрыть", "Выход"])
             # Как при выборе пункта пользователем, сначала закрывается popup.
             menu.close()
-            menu.actions()[0].trigger()
+            self.window.context_menu.exit_action.trigger()
 
         self.window.show()
         watchdog.start(2000)

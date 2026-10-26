@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from rebecca.ui.character_window import CharacterWindow
 from rebecca.ui.sprite_renderer import MAX_SCALE, MIN_SCALE, SCALE, STATES
+from rebecca.ui.tray import create_tray
 
 
 def main() -> int:
@@ -25,6 +26,8 @@ def main() -> int:
         print("Не найден экран для отображения персонажа.", file=sys.stderr)
         return 1
     window = CharacterWindow(args.state, args.scale, args.sprites_dir)
+    tray = create_tray(window)
+    app.setQuitOnLastWindowClosed(tray is None)
     window.place_above_taskbar(screen.availableGeometry())
-    window.show()
+    window.show_character()
     return app.exec()

@@ -69,11 +69,11 @@ def scale_sprite(source: QPixmap, scale: int) -> QPixmap:
     )
 
 
-def create_placeholder(scale: int = SCALE) -> QPixmap:
-    pixmap = QPixmap(len(PIXELS[0]), len(PIXELS))
+def create_placeholder(scale: int = SCALE, *, pixels: tuple[str, ...] = PIXELS) -> QPixmap:
+    pixmap = QPixmap(len(pixels[0]), len(pixels))
     pixmap.fill(Qt.GlobalColor.transparent)
     image = pixmap.toImage()
-    for y, row in enumerate(PIXELS):
+    for y, row in enumerate(pixels):
         for x, pixel in enumerate(row):
             if pixel != ".":
                 image.setPixelColor(x, y, QColor(PALETTE[pixel]))
@@ -89,9 +89,18 @@ def load_sprite(
     validate_scale(scale)
     directory = DEFAULT_SPRITES_DIR if sprites_dir is None else Path(sprites_dir)
     path = directory / f"{state}.png"
+    source = read_png(path)
+    if source is not None:
+        return scale_sprite(source, scale)
+    logger.warning("Используется временная фигурка для состояния %s.", state)
+    return create_placeholder(scale)
+
+
+def read_png(path: Path) -> QPixmap | None:
+    """Проверенный исходный кадр без масштабирования; None при ошибке."""
     if not path.is_file():
-        logger.warning("Спрайт %s отсутствует; используется временная фигурка.", path)
-        return create_placeholder(scale)
+        logger.warning("Спрайт %s отсутствует.", path)
+        return None
     reader = QImageReader(str(path), b"png")
     reader.setAutoDetectImageFormat(False)
     size = reader.size()
@@ -110,6 +119,6 @@ def load_sprite(
                 ):
                     reason = "изображение полностью прозрачно"
                 else:
-                    return scale_sprite(QPixmap.fromImage(image), scale)
-    logger.warning("Спрайт %s: %s; используется временная фигурка.", path, reason)
-    return create_placeholder(scale)
+                    return QPixmap.fromImage(image)
+    logger.warning("Спрайт %s не загружен: %s.", path, reason)
+    return None

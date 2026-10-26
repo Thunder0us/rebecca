@@ -4,17 +4,19 @@ from pathlib import Path
 from collections.abc import Callable
 
 from PySide6.QtCore import QPoint, QRect, Qt, QTimer
-from PySide6.QtGui import QContextMenuEvent, QIcon, QMouseEvent, QPaintEvent, QPainter, QScreen
+from PySide6.QtGui import QContextMenuEvent, QHideEvent, QIcon, QMouseEvent, QPaintEvent, QPainter, QScreen, QShowEvent
 from PySide6.QtWidgets import QApplication, QWidget
 
-from rebecca.ui.sprite_renderer import SCALE, load_sprite
+from rebecca.ui.sprite_renderer import SCALE
+from rebecca.ui.animation import load_animation, load_demo_animation
 from rebecca.platform.displays import clamp_to_work_area
 from rebecca.ui.menu import CharacterMenu
 
 
 class CharacterWindow(QWidget):
     def __init__(
-        self, state: str = "idle", scale: int = SCALE, sprites_dir: Path | None = None
+        self, state: str = "idle", scale: int = SCALE, sprites_dir: Path | None = None,
+        facing: str = "right", demo_animation: bool = False,
     ) -> None:
         super().__init__(
             None,
@@ -29,13 +31,23 @@ class CharacterWindow(QWidget):
         # Позволяет сбросить drag, если Qt получил движение уже без зажатой кнопки.
         self.setMouseTracking(True)
         self.setWindowTitle("Ребекка — прототип")
-        self._sprite = load_sprite(state, scale, sprites_dir)
+        if facing not in ("left", "right"):
+            raise ValueError("Направление должно быть left или right")
+        self._facing_left = facing == "left"
+        self._animation = (load_demo_animation(state, scale) if demo_animation
+                           else load_animation(state, scale, sprites_dir))
+        self._frame_index = 0
+        self._sprite = self._animation.frames[0]
         self.setFixedSize(self._sprite.size())
         self.setWindowIcon(QIcon(self._sprite))
         self._drag_offset: QPoint | None = None
         self._paused = False
+        self._animation_timer = QTimer(self)
+        self._animation_timer.setInterval(round(1000 / self._animation.fps))
+        self._animation_timer.timeout.connect(self._advance_frame)
         self._can_hide: Callable[[], bool] = lambda: False
-        self._menu = CharacterMenu(self, self.toggle_pause, self.toggle_visibility, self.exit_application)
+        self._menu = CharacterMenu(self, self.toggle_pause, self.toggle_visibility,
+                                   self.exit_application, self.toggle_facing)
         self._menu.aboutToShow.connect(self._sync_menu)
         self._sync_menu()
         app = QApplication.instance()
@@ -58,7 +70,35 @@ class CharacterWindow(QWidget):
     def toggle_pause(self) -> None:
         self._paused = not self._paused
         self._drag_offset = None
+        self._sync_animation_timer()
         self._sync_menu()
+
+    def toggle_facing(self) -> None:
+        self._facing_left = not self._facing_left
+        self.update()
+
+    def _sync_animation_timer(self) -> None:
+        should_run = self.isVisible() and not self._paused and len(self._animation.frames) > 1
+        if should_run and not self._animation_timer.isActive():
+            self._animation_timer.start()
+        elif not should_run:
+            self._animation_timer.stop()
+
+    def _advance_frame(self) -> None:
+        if not self.isVisible() or self._paused:
+            return
+        self._frame_index = (self._frame_index + 1) % len(self._animation.frames)
+        self._sprite = self._animation.frames[self._frame_index]
+        self.update()
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._sync_animation_timer()
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._drag_offset = None
+        self._sync_animation_timer()
+        super().hideEvent(event)
 
     def toggle_visibility(self) -> None:
         if self.isVisible():
@@ -133,6 +173,9 @@ class CharacterWindow(QWidget):
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
+        if self._facing_left:
+            painter.translate(self.width(), 0)
+            painter.scale(-1, 1)
         painter.drawPixmap(0, 0, self._sprite)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:

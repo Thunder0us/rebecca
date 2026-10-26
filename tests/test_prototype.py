@@ -65,7 +65,7 @@ class PrototypeTests(unittest.TestCase):
             menu = self.window.findChild(QMenu)
             self.assertTrue(menu.isVisible())
             self.assertEqual([action.text() for action in menu.actions() if not action.isSeparator()],
-                             ["Пауза", "Скрыть", "Выход"])
+                             ["Пауза", "Скрыть", "Развернуть", "Выход"])
             # Как при выборе пункта пользователем, сначала закрывается popup.
             menu.close()
             self.window.context_menu.exit_action.trigger()

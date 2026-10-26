@@ -1,6 +1,8 @@
 """События drag и границы проверяются без настоящего Windows-дисплея."""
 
 import unittest
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -39,13 +41,15 @@ class DragTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        self.window = CharacterWindow()
+        self.sprites = tempfile.TemporaryDirectory()
+        self.window = CharacterWindow(sprites_dir=Path(self.sprites.name))
         self.window.move(100, 100)
 
     def tearDown(self):
         self.window.close()
         self.window.deleteLater()
         self.app.processEvents()
+        self.sprites.cleanup()
 
     def send_mouse(self, kind, global_pos, button, buttons):
         local = global_pos - self.window.pos()

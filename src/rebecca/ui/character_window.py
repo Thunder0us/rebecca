@@ -1,15 +1,19 @@
 """Окно размером с фигуру, а не с экран; обычные локальные события Qt."""
 
+from pathlib import Path
+
 from PySide6.QtCore import QPoint, QRect, Qt, QTimer
 from PySide6.QtGui import QContextMenuEvent, QMouseEvent, QPaintEvent, QPainter, QScreen
 from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
-from rebecca.ui.sprite_renderer import create_placeholder
+from rebecca.ui.sprite_renderer import SCALE, load_sprite
 from rebecca.platform.displays import clamp_to_work_area
 
 
 class CharacterWindow(QWidget):
-    def __init__(self) -> None:
+    def __init__(
+        self, state: str = "idle", scale: int = SCALE, sprites_dir: Path | None = None
+    ) -> None:
         super().__init__(
             None,
             Qt.WindowType.Tool
@@ -23,7 +27,7 @@ class CharacterWindow(QWidget):
         # Позволяет сбросить drag, если Qt получил движение уже без зажатой кнопки.
         self.setMouseTracking(True)
         self.setWindowTitle("Ребекка — прототип")
-        self._sprite = create_placeholder()
+        self._sprite = load_sprite(state, scale, sprites_dir)
         self.setFixedSize(self._sprite.size())
         self._menu = QMenu(self)
         exit_action = self._menu.addAction("Выход", self.close)
@@ -89,6 +93,7 @@ class CharacterWindow(QWidget):
 
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
         painter.drawPixmap(0, 0, self._sprite)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
